@@ -1,0 +1,41 @@
+name: Auto-Update Blocklist
+
+on:
+  schedule:
+    # Runs automatically every Sunday at midnight
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # Allows you to run it manually anytime with one click
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Generate Fresh Blocklist
+        run: |
+          python -c "
+          import urllib.request
+          
+          # Example of pulling a clean public blocklist feed or adding custom core entries
+          core_domains = ['example.com', 'testsite.com']
+          
+          print('Updating blocklist...')
+          with open('blocklist.txt', 'w', encoding='utf-8') as f:
+              for domain in core_domains:
+                  f.write(domain + '\n')
+          "
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🤖 Automated bot: refreshed blocklist"
+          file_pattern: blocklist.txt
