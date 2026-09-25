@@ -20,22 +20,40 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Generate Fresh Blocklist
+      - name: Fetch Open-Source Blocklist Feed
         run: |
           python -c "
           import urllib.request
           
-          # Example of pulling a clean public blocklist feed or adding custom core entries
-          core_domains = ['example.com', 'testsite.com']
+          # Pulling from a reputable open-source domain blocklist
+          url = 'https://raw.githubusercontent.com/blocklistproject/Lists/master/porn.txt'
           
-          print('Updating blocklist...')
-          with open('blocklist.txt', 'w', encoding='utf-8') as f:
-              for domain in core_domains:
-                  f.write(domain + '\n')
+          print('Fetching fresh blocklist feed...')
+          req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+          
+          try:
+              with urllib.request.urlopen(req) as response:
+                  raw_lines = response.read().decode('utf-8').splitlines()
+              
+              # Filter out comments and empty lines
+              cleaned_domains = []
+              for line in raw_lines:
+                  line = line.strip()
+                  if line and not line.startswith('#'):
+                      cleaned_domains.append(line)
+                      
+              # Save directly to blocklist.txt
+              with open('blocklist.txt', 'w', encoding='utf-8') as f:
+                  f.write('\n'.join(cleaned_domains) + '\n')
+                  
+              print(f'Successfully updated blocklist.txt with {len(cleaned_domains)} domains.')
+          except Exception as e:
+              print(f'Error fetching blocklist: {e}')
+              exit(1)
           "
 
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "🤖 Automated bot: refreshed blocklist"
+          commit_message: "🤖 Automated bot: refreshed blocklist feed"
           file_pattern: blocklist.txt
